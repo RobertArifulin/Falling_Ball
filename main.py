@@ -387,6 +387,21 @@ while run:
             except Exception:
                 print(v1, v0, g, a, h, p, S, weight)
                 running_time = False
+                fig = plt.figure()  # настраиваем размер, чтобы не коверкать картинку
+                plt.grid(True)
+                plt.plot(part_h_arr[0], Fly_arr, color='b')
+                # plt.plot([part_h_arr[0][len(part_h_arr[0]) - 1], part_h_arr[1][0]],
+                #          [Fly_arr[len(Fly_arr) - 1], a0_arr[0]],
+                #          color='g')
+                # plt.plot(part_h_arr[1], a0_arr, color='g')
+                # plt.plot([part_h_arr[1][len(part_h_arr[1]) - 1], part_h_arr[2][0]],
+                #          [a0_arr[len(a0_arr) - 1], hit_arr[0]],
+                #          color='r')
+                # plt.plot(part_h_arr[2], hit_arr, color='r')
+                plt.xlabel("Путь")  # подпишем оси
+                plt.ylabel("Вес")
+                plt.show()
+
             print(h, weight, p, v1, a)
             arr_append(th, weight, a, tp.delta_h)
             if 10000 < h:
@@ -421,6 +436,19 @@ while run:
             if round(v1, 2) == 0:
                 on_hit = False
         if -2 * r <= h < 0 and not on_hit:  # неполное погружение
+            fig = plt.figure()  # настраиваем размер, чтобы не коверкать картинку
+            plt.grid(True)
+            plt.plot(part_h_arr[0], Fly_arr, color='b', label='Равноускоренный полет')
+            plt.plot([part_h_arr[0][len(part_h_arr[0]) - 1], part_h_arr[1][0]], [Fly_arr[len(Fly_arr) - 1], a0_arr[0]],
+                     color='g')
+            plt.plot(part_h_arr[1], a0_arr, color='g', label='Равномерный полет')
+            plt.plot([part_h_arr[1][len(part_h_arr[1]) - 1], part_h_arr[2][0]], [a0_arr[len(a0_arr) - 1], hit_arr[0]],
+                     color='r')
+            plt.plot(part_h_arr[2], hit_arr, color='r', label='Удар о воду')
+            plt.xlabel("Путь")  # подпишем оси
+            plt.ylabel("Вес")
+            plt.show()
+            running_time = False
             print(h, weight, v0, v1, a)
             tp.delta_t = 0.01
             v0 = v1
