@@ -6,7 +6,7 @@ import pygame_gui as pgui
 
 
 # суммарное ускорение от g и сопр. среды
-def a_h(new_g, new_Fr):
+def a_F(new_g, new_Fr):
     global m
     new_a = (new_g * m - new_Fr) / m
     return round(new_a, 4)
@@ -25,6 +25,7 @@ def v_S(new_a, new_v0, new_S):
 def S_t(new_v0, new_t, new_a):
     new_S = new_v0 * new_t + new_a * (new_t ** 2) / 2
     return round(new_S, 6)
+
 
 # сила тяжести
 def g_force(new_m, new_g):
@@ -62,6 +63,10 @@ def resist_force(new_v, new_p, new_S, new_Cf):
 # к сжатия воздуха от глубины
 def k_h(new_h):
     new_P = P_h(new_h)
+    if new_P <= tp.ar_P[0]:
+        return tp.ar_k[0]
+    if new_P >= tp.ar_P[-1]:
+        return tp.ar_k[-1]
     i = len(tp.ar_k) - 1
     while tp.ar_P[i] > new_P:
         i -= 1
@@ -72,16 +77,16 @@ def k_h(new_h):
 
 
 # сжатие шара на глубине
-def comress_h(new_h, new_V):
+def comress_h(new_h, old_V):
     new_k = k_h(new_h)
     new_P = P_h(new_h) / 101325
-    new_V = new_V * new_k / new_P
+    new_V = old_V/(new_P * new_k)
     return round(new_V, 7)
 
 
 # поиск объема сегмента шара
 def Vseg_h(new_h, new_r):
-    new_Vseg = round(math.pi * (new_h ** 2) * (3 * new_r - new_h) / 3, 3)
+    new_Vseg = math.pi * (new_h ** 2) * (3 * new_r - new_h) / 3
     return new_Vseg
 
 
@@ -210,21 +215,43 @@ def limit_check(pm, pv, ph, pdelta):
 
 def arr_append(new_th, new_weight, new_a, new_delta_h):
     global Fly_arr, a0_arr, hit_arr, part_h_arr, h_entry
-    if round(new_th, 0) >= round(float(h_entry.get_text()), 0):
-        hit_arr.append(new_weight)
-        part_h_arr[2].append(new_th + new_delta_h)
-    elif round(new_a, 1) == 0:
+    if round(new_a, 1) == 0 or len(a0_arr) > 0:
         a0_arr.append(new_weight)
         part_h_arr[1].append(new_th + new_delta_h)
-    elif new_th < float(h_entry.get_text()):
+    else:
         Fly_arr.append(new_weight)
         part_h_arr[0].append(new_th + new_delta_h)
 
 
+def draw_graph():
+    fig = plt.figure()  # настраиваем размер, чтобы не коверкать картинку
+    plt.grid(True)
+    plt.plot(part_h_arr[0], Fly_arr, color='b')
+    if len(part_h_arr[1]) > 0:
+        plt.plot([part_h_arr[0][-1], part_h_arr[1][0]], [Fly_arr[-1], a0_arr[0]], color='g')
+        plt.plot(part_h_arr[1], a0_arr, color='g')
+        if len(part_h_arr[2]) > 0:
+            plt.plot([part_h_arr[1][-1], part_h_arr[2][0]], [a0_arr[-1], hit_arr[0]], color='r')
+            print('here 1')
+    if len(part_h_arr[1]) == 0 and len(part_h_arr[2]) > 0:
+            plt.plot([part_h_arr[0][-1], part_h_arr[2][0]], [Fly_arr[-1], hit_arr[0]], color='r')
+            print('here 2')
+    if len(part_h_arr[2]) > 0:
+        plt.plot(part_h_arr[2], hit_arr, color='r')
+        if len(part_h_arr[3]) > 0:
+            plt.plot([part_h_arr[2][-1], part_h_arr[3][0]], [hit_arr[-1], part_water_ar[0]], color='r')
+    if len(part_h_arr[3]) > 0:
+        plt.plot(part_h_arr[3], part_water_ar, color='c')
+    if len(part_h_arr[4]) > 0 and len(part_h_arr[3]) > 0:
+        plt.plot([part_h_arr[3][-1], part_h_arr[4][0]], [part_water_ar[-1], water_ar[0]], color='m')
+        plt.plot(part_h_arr[4], water_ar, color='m')
+    plt.xlabel("Путь")  # подпишем оси
+    plt.ylabel("Вес")
+    plt.show()
 
 
 def Reset():
-    global weight, time, p, a, th, g, v0, v1, Vseg, Farh, Fly_arr, a0_arr, hit_arr, h_arr, weight_arr, part_h_arr, on_hit, part_water_ar
+    global weight, time, p, a, th, g, v0, v1, Vseg, Farh, Fly_arr, a0_arr, hit_arr, h_arr, weight_arr, part_h_arr, on_hit, part_water_ar, water_ar, P, R
     weight = 0  # вес
     time = 0  # время
     p = 0  # плотность воздуха
@@ -235,12 +262,15 @@ def Reset():
     v1 = 0  # конечная скорость
     Vseg = 0  # объем сегмента шара
     Farh = 0  # сила Архимеда
+    R = round(((V * 3) / (math.pi * 4)) ** (1 / 3), 3)
+    P = 101325  # давление
     Fly_arr = [0]  # список веса для графика
     a0_arr = []
     hit_arr = []
     h_arr = []  # список высот для графика
     weight_arr = []
     part_water_ar = []
+    water_ar = []
     part_h_arr = [[0], [], [], [], []]
     on_hit = True
 
@@ -259,7 +289,8 @@ screen.fill(tp.white)
 m = 10
 V = 10
 h = 200000
-r = ((V * 3) / (math.pi * 4)) ** (1 / 3)
+R = ((V * 3) / (math.pi * 4)) ** (1 / 3)
+r = R
 S = math.pi * r ** 2
 
 text = '''
@@ -279,6 +310,8 @@ v0 = 0  # начальная скорость
 v1 = 0  # конечная скорость
 Vseg = 0  # объем сегмента шара
 Farh = 0  # сила Архимеда
+P = 101325 # давление
+R = round(((V * 3) / (math.pi * 4)) ** (1 / 3), 3)
 on_hit = True
 # delta_v = -1
 
@@ -286,11 +319,11 @@ Fly_arr = [0]  # список веса для графика
 a0_arr = []
 hit_arr = []
 part_water_ar = []
+water_ar = []
 part_h_arr = [[0], [], [], [], []]
 
 weight_arr = []
 h_arr = []  # список высот для графика
-
 
 running_time = False  # идут ли расчеты
 check = [0, 0, 0, 0]
@@ -300,8 +333,8 @@ Start_b = pgui.elements.UIButton(relative_rect=pg.Rect((50, 10), tp.Start_b_size
                                  text='Start',
                                  manager=manager)
 Restart_b = pgui.elements.UIButton(relative_rect=pg.Rect((260, 10), tp.Restart_b_size),
-                                  text='Restart',
-                                  manager=manager)
+                                   text='Restart',
+                                   manager=manager)
 
 m_entry = pgui.elements.UITextEntryLine(relative_rect=pg.Rect((tp.Input_x, tp.Input_y), tp.Input_size),
                                         manager=manager)
@@ -336,11 +369,10 @@ screen.blit(f1.render(tp.title_V, False, tp.black), (50, 175))
 screen.blit(f1.render(tp.title_h, False, tp.black), (50, 245))
 screen.blit(f1.render(tp.title_delta_h, False, tp.black), (50, 315))
 
-print(h, weight, p, v1, a)
 run = True
 while run:
     r = round(((V * 3) / (math.pi * 4)) ** (1 / 3), 3)
-    S = round(math.pi * r ** 2, 3)
+    S = round(math.pi * (r ** 2), 3)
 
     time_delta = clock.tick(60) / 1000.0
     for event in pg.event.get():
@@ -352,6 +384,7 @@ while run:
                 if event.ui_element == Start_b:  # нажатие на старт
                     if Start_b.text == 'Start':
                         Start_b.set_text('Stop')
+                        R = round(((V * 3) / (math.pi * 4)) ** (1 / 3), 3)
                         running_time = True
                     else:
                         Start_b.set_text('Start')
@@ -363,6 +396,7 @@ while run:
                     m = float(m_entry.get_text())
                     V = float(V_entry.get_text())
                     h = float(h_entry.get_text())
+                    R = round(((V * 3) / (math.pi * 4)) ** (1 / 3), 3)
                     tp.delta_h = float(h_delta_entry.get_text())
                     pg.draw.rect(screen, tp.white, (50, tp.text_y, 350, 230))
                     draw_text(screen)
@@ -380,8 +414,8 @@ while run:
             v0 = v1
             g = g_h(h)
             p = p_h(h)
-            weight = resist_force(v1, p, S, tp.Cf)
-            a = a_h(g, weight)
+            weight = resist_force(v0, p, S, tp.Cf)
+            a = a_F(g, weight)
             try:
                 v1 = v_S(a, v0, tp.delta_h)
             except Exception:
@@ -390,102 +424,77 @@ while run:
                 fig = plt.figure()  # настраиваем размер, чтобы не коверкать картинку
                 plt.grid(True)
                 plt.plot(part_h_arr[0], Fly_arr, color='b')
-                # plt.plot([part_h_arr[0][len(part_h_arr[0]) - 1], part_h_arr[1][0]],
-                #          [Fly_arr[len(Fly_arr) - 1], a0_arr[0]],
-                #          color='g')
-                # plt.plot(part_h_arr[1], a0_arr, color='g')
-                # plt.plot([part_h_arr[1][len(part_h_arr[1]) - 1], part_h_arr[2][0]],
-                #          [a0_arr[len(a0_arr) - 1], hit_arr[0]],
-                #          color='r')
-                # plt.plot(part_h_arr[2], hit_arr, color='r')
                 plt.xlabel("Путь")  # подпишем оси
                 plt.ylabel("Вес")
                 plt.show()
 
             print(h, weight, p, v1, a)
             arr_append(th, weight, a, tp.delta_h)
+
+
+
             if 10000 < h:
                 h = round(h - tp.delta_h, 3)  # тякущая высота
                 th = round(th + tp.delta_h, 3)  # сколько пролетел
-            if 10000 >= h > tp.delta_h > 5:
-                tp.delta_h = 5
-                h = round(h - tp.delta_h, 3)  # тякущая высота
-                th = round(th + tp.delta_h, 3)  # сколько пролетел
-            elif 10000 >= h > tp.delta_h <= 5:
-                h = round(h - tp.delta_h, 3)  # тякущая высота
-                th = round(th + tp.delta_h, 3)  # сколько пролетел
+            if 10000 >= h >= tp.delta_h:
+                h = round(h - 5, 3)  # тякущая высота
+                th = round(th + 5, 3)  # сколько пролетел
             if 0 < h <= tp.delta_h:
-                tp.delta_h = h
                 th = round(float(h_entry.get_text()), 0)  # сколько пролетел
                 h = 0  # тякущая высота
 
-        if -100 < h <= 0 and on_hit:  # удар о воду
+        if h == 0 and len(part_h_arr[2]) == 0:  # удар о воду
             v0 = v1
             weight = resist_force(v1, tp.water_p, S, tp.Cf)
-            a = a_h(tp.sea_g, weight)
+            a = a_F(tp.sea_g, weight)
             print(h, weight, v0, v1, a)
-            v1 = round(v0 + a*tp.delta_t, 6)
-            th += S_t(v0, tp.delta_t, a)
-            h -= S_t(v0, tp.delta_t, a)
-            h = round(h, 6)
-            th = round(th, 6)
-            print(h, weight, v0, v1, a)
+            v1 = 0
+            # th += 0.05
+            # h -= 0.05
+            # print(h, weight, v0, v1, a)
             time += tp.delta_t
             hit_arr.append(weight)
-            part_h_arr[2].append(th + S_t(v0, tp.delta_t, a))
-            if round(v1, 2) == 0:
-                on_hit = False
-        if -2 * r <= h < 0 and not on_hit:  # неполное погружение
-            fig = plt.figure()  # настраиваем размер, чтобы не коверкать картинку
-            plt.grid(True)
-            plt.plot(part_h_arr[0], Fly_arr, color='b', label='Равноускоренный полет')
-            plt.plot([part_h_arr[0][len(part_h_arr[0]) - 1], part_h_arr[1][0]], [Fly_arr[len(Fly_arr) - 1], a0_arr[0]],
-                     color='g')
-            plt.plot(part_h_arr[1], a0_arr, color='g', label='Равномерный полет')
-            plt.plot([part_h_arr[1][len(part_h_arr[1]) - 1], part_h_arr[2][0]], [a0_arr[len(a0_arr) - 1], hit_arr[0]],
-                     color='r')
-            plt.plot(part_h_arr[2], hit_arr, color='r', label='Удар о воду')
-            plt.xlabel("Путь")  # подпишем оси
-            plt.ylabel("Вес")
-            plt.show()
-            running_time = False
-            print(h, weight, v0, v1, a)
+            part_h_arr[2].append(round(th + 0.05))
+        if -(2 * R) <= h <= 0 and len(part_h_arr[2]) != 0:  # неполное погружение
+            # draw_graph()
+            print('1', h, weight, v0, v1, a, V, Vseg, R)
             tp.delta_t = 0.01
             v0 = v1
-            Vseg = Vseg_h(abs(h), r)
+            Vseg = round(Vseg_h(abs(h), R), 5)  # спросить про расчет объема частично погруженного шара
             Farh = Arh_force(Vseg)
-            weight = (m * tp.sea_g - Farh)
-            weight = round(weight, 4)
-            a = weight/m
-            a = round(a, 4)
-            v1 = math.sqrt(S_t(v0, tp.delta_t, a) * 2 * a + v0**2)
-            v1 = round(v1, 4)
-            th += S_t(v0, tp.delta_t, a)
-            h -= S_t(v0, tp.delta_t, a)
-            h = round(h, 6)
-            th = round(th, 6)
-            print(h, weight, v0, v1, a)
-            part_water_ar.append(weight + S_t(v0, tp.delta_t, a))
-            part_h_arr[3].append(th)
-        if not on_hit and h < -2*r:
-            print(Fly_arr, a0_arr, hit_arr)
-            print(part_h_arr)
-            fig = plt.figure()  # настраиваем размер, чтобы не коверкать картинку
-            plt.grid(True)
-            plt.plot(part_h_arr[0], Fly_arr, color='b')
-            plt.plot([part_h_arr[0][len(part_h_arr[0]) - 1], part_h_arr[1][0]], [Fly_arr[len(Fly_arr) - 1], a0_arr[0]], color='g')
-            plt.plot(part_h_arr[1], a0_arr, color='g')
-            plt.plot([part_h_arr[1][len(part_h_arr[1]) - 1], part_h_arr[2][0]], [a0_arr[len(a0_arr) - 1], hit_arr[0]], color='r')
-            plt.plot(part_h_arr[2], hit_arr, color='r')
-            plt.plot([part_h_arr[2][len(part_h_arr[2]) - 1], part_h_arr[3][0]], [hit_arr[len(hit_arr) - 1], part_water_ar[0]], color='c')
-            plt.plot(part_h_arr[3], part_water_ar, color='c')
-            plt.xlabel("Путь")  # подпишем оси
-            plt.ylabel("Вес")
-            plt.show()
-            h = round(h - tp.hit_delta_h, 2)  # тякущая высота
-            th = round(th + tp.hit_delta_h, 2)  # сколько пролетел
-
-
+            weight = round(m * tp.sea_g - Farh, 4)
+            a = round(weight / m, 4)
+            v1 = round(v0 + tp.delta_t * a, 4)
+            th += round(S_t(v0, tp.delta_t, a), 6)
+            h -= round(S_t(v0, tp.delta_t, a), 6)
+            print('1', h, weight, v0, v1, a, V, Vseg, R)
+            part_water_ar.append(weight)
+            part_h_arr[3].append(th + S_t(v0, tp.delta_t, a))
+            if v1 <= 0:
+                running_time = False
+                draw_graph()
+        if -10000 <= h < -(2 * R):  # погружение
+            # draw_graph()
+            print('2', h, weight, v0, v1, a, V, r)
+            v0 = v1
+            P = P_h(abs(h))
+            V = comress_h(abs(h), V)
+            Farh = Arh_force(Vseg)
+            weight = round(m * tp.sea_g - Farh, 4)
+            a = round(weight / m, 4)
+            v1 = v_S(a, v0, tp.delta_h)
+            h = round(h - tp.delta_h, 2)  # тякущая высота
+            th = round(th + tp.delta_h, 2)  # сколько пролетел
+            water_ar.append(weight)
+            part_h_arr[4].append(th + tp.delta_h)
+        if h < -10000:
+            draw_graph()
+            running_time = False
+            print(part_h_arr[0])
+            print('____________________')
+            print(part_h_arr[1])
+            print('____________________')
+            print(part_h_arr[2])
         pg.draw.rect(screen, tp.white, (50, tp.text_y, 350, 230))
         draw_text(screen)
 
