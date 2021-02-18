@@ -1,10 +1,13 @@
 import string
 import numpy as np
 
-delta_h = 10  # шаг измерений
-hit_delta_h = 0.1
-dive_delta = 0.1
-delta_t = 0.001
+# шаг измерений
+delta_h = 10  # задаеться пользователем
+max_delta = 5  # на низких высотах
+hit_delta_h = 0.1  #
+dive_delta = 0.1  #
+
+delta_t = 0.001  #
 
 WIDTH = 1600  # ширина игрового окна
 HEIGHT = 900  # высота игрового окна
