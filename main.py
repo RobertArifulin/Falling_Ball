@@ -1,10 +1,10 @@
 import pygame as pg
 import Fall_Types as tp
 import matplotlib.pyplot as plt
-import matplotlib.transforms as transforms
 import math
 import pygame_gui as pgui
 from matplotlib.animation import FuncAnimation
+
 
 # суммарное ускорение от g и сопр. среды
 def a_F(new_g, new_Fr):
@@ -81,7 +81,7 @@ def k_h(new_h):
 def comress_h(new_h, old_V):
     new_k = k_h(new_h)
     new_P = P_h(new_h) / 101325
-    new_V = old_V/(new_P * new_k)
+    new_V = old_V / (new_P * new_k)
     return round(new_V, 7)
 
 
@@ -112,7 +112,7 @@ def focus_check():
 
 # внесение изменений в параметры после исправлений
 def changes():
-    global check, m_entry, V_entry, h_entry, h, m, V, h_delta_entry
+    global check, m_entry, V_entry, h_entry, h, m, V, V0, h_delta_entry
     if not m_entry.is_focused and check[0] == 1:
         m_entry.set_text(limit_check(m_entry.get_text(), '1', '1', '1')[0])
         m = float(m_entry.get_text())
@@ -120,6 +120,7 @@ def changes():
     if not V_entry.is_focused and check[1] == 1:
         V_entry.set_text(limit_check('1', V_entry.get_text(), '1', '1')[1])
         V = float(V_entry.get_text())
+        V0 = V
         check[1] = 0
     if not h_entry.is_focused and check[2] == 1:
         h_entry.set_text(limit_check('1', '1', h_entry.get_text(), '1')[2])
@@ -135,23 +136,18 @@ def changes():
 def clean(new_text):
     ctext = ''
     flag = False
-
     for i in range(0, 10):
         if new_text.find(str(i)) != -1:
             flag = True
-
     if not flag:
         new_text = '0.00001'
-
     for i in new_text:
         if i == ',':
             ctext += '.'
         else:
             ctext += i
-
     new_text = ctext.strip('.').lstrip('0')
     ctext = new_text.replace('.', '', (new_text.count('.') - 1))
-
     return ctext
 
 
@@ -172,16 +168,16 @@ def enable(yes):
 
 # отрисовка текста
 def draw_text(window):
-    global f1
-    screen.blit(f1.render('Ускорение    ' + str(a), False, tp.black), (50, tp.text_y))
-    screen.blit(f1.render('Вес  ' + str(weight), False, tp.black), (50, tp.text_y + 70))
-    screen.blit(f1.render('Скорось  ' + str(v1), False, tp.black), (50, tp.text_y + 70 * 2))
-    screen.blit(f1.render('Высота   ' + str(h), False, tp.black), (50, tp.text_y + 70 * 3))
+    global out_f
+    screen.blit(out_f.render('Ускорение    ' + str(round(a, 3)), False, tp.black), (50, tp.text_y))
+    screen.blit(out_f.render('Вес  ' + str(round(weight, 3)), False, tp.black), (50, tp.text_y + 70))
+    screen.blit(out_f.render('Скорось  ' + str(round(v1, 3)), False, tp.black), (50, tp.text_y + 70 * 2))
+    screen.blit(out_f.render('Высота   ' + str(round(h, 3)), False, tp.black), (50, tp.text_y + 70 * 3))
 
-    window.blit(f1.render('м/с2', False, tp.black), (tp.text_x, tp.text_y))
-    window.blit(f1.render('Н', False, tp.black), (tp.text_x, tp.text_y + 70))
-    window.blit(f1.render('м/с', False, tp.black), (tp.text_x, tp.text_y + 70 * 2))
-    window.blit(f1.render('м', False, tp.black), (tp.text_x, tp.text_y + 70 * 3))
+    window.blit(out_f.render('м/с2', False, tp.black), (tp.text_x, tp.text_y))
+    window.blit(out_f.render('Н', False, tp.black), (tp.text_x, tp.text_y + 70))
+    window.blit(out_f.render('м/с', False, tp.black), (tp.text_x, tp.text_y + 70 * 2))
+    window.blit(out_f.render('м', False, tp.black), (tp.text_x, tp.text_y + 70 * 3))
 
 
 # проверка границ параметров
@@ -226,7 +222,7 @@ def arr_append(new_th, new_weight, new_a, new_delta_h):
 
 def Draw_graph():
     fig = plt.figure()  # настраиваем размер, чтобы не коверкать картинку
-    fig = plt.axis([0, max(all_h_arr)*1.1, min(all_weight_arr)*1.1, tp.max_m*20])
+    fig = plt.axis([0, max(all_h_arr) * 1.1, min(all_weight_arr) * 1.1, tp.max_m * 20])
     plt.grid(True)
     plt.plot(part_h_arr[0], Fly_arr, color='b')
     if len(part_h_arr[1]) > 0:
@@ -236,8 +232,8 @@ def Draw_graph():
             plt.plot([part_h_arr[1][-1], part_h_arr[2][0]], [a0_arr[-1], hit_arr[0]], color='r')
             print('here 1')
     if len(part_h_arr[1]) == 0 and len(part_h_arr[2]) > 0:
-            plt.plot([part_h_arr[0][-1], part_h_arr[2][0]], [Fly_arr[-1], hit_arr[0]], color='r')
-            print('here 2')
+        plt.plot([part_h_arr[0][-1], part_h_arr[2][0]], [Fly_arr[-1], hit_arr[0]], color='r')
+        print('here 2')
     if len(part_h_arr[2]) > 0:
         plt.plot(part_h_arr[2], hit_arr, color='r')
         if len(part_h_arr[3]) > 0:
@@ -300,17 +296,22 @@ def Reset_Variable():
 
 
 def Restart_bf():
-    global running_time, m, V, h, R
+    global running_time, m, V, h, R, V0
     Start_b.set_text('Start')
     running_time = False
     Reset_Variable()
     m = float(m_entry.get_text())
     V = float(V_entry.get_text())
+    V0 = V
     h = float(h_entry.get_text())
     R = round(((V * 3) / (math.pi * 4)) ** (1 / 3), 3)
     tp.delta_h = float(h_delta_entry.get_text())
-    pg.draw.rect(screen, tp.white, (50, tp.text_y, 350, 230))
+    pg.draw.rect(screen, tp.white, (50, tp.text_y, 250, 230))
     draw_text(screen)
+
+
+def Draw_main_graph():
+    pg.draw.rect(screen, tp.black, [790, 10, 1590])
 
 
 def Draw_graph_bf():
@@ -325,7 +326,7 @@ def Draw_graph_bf():
 
     Start_b.set_text('Start')
     Draw_graph()
-    Draw_animation()
+    # Draw_animation()
 
     Start_b.enable()
     Restart_b.enable()
@@ -335,36 +336,57 @@ def Draw_graph_bf():
     h_delta_entry.enable()
 
 
-def weight_delay_control(weight_ar):
-    if len(weight_ar) > 1:
-        if abs(weight_ar[-1] - weight_ar[-2]) >= 10:
-            tp.max_delta -= 0.5
+class Axis:
+    def __init__(self, ab_x, ab_y, ord_x, ord_y, ab_len, ord_len):
+        self.ab_x = ab_x
+        self.ord_x = ord_x
+        self.ab_y = ab_y
+        self.ord_y = ord_y
+        self.ab_len = ab_len
+        self.ord_len = ord_len
+        self.start_pos_ab = (ab_x, ab_y)
+        self.start_pos_ord = (ord_x, ord_y)
+        self.end_pos_ab = (ab_x + ab_len, ab_y)
+        self.end_pos_ord = (ord_x, ord_y - ord_len)
 
+    def draw(self):
+        pg.draw.line(screen, tp.black, self.start_pos_ab, self.end_pos_ab, width=3)
+        pg.draw.line(screen, tp.black, self.start_pos_ord, self.end_pos_ord, width=3)
+        pg.draw.polygon(screen, tp.black, [(self.ab_x + self.ab_len + 7, self.ab_y), (self.ab_x + self.ab_len, self.ab_y + 4),
+                                           (self.ab_x + self.ab_len, self.ab_y - 4)])
+        pg.draw.polygon(screen, tp.black, [(self.ord_x, self.ord_y - self.ord_len - 7), (self.ord_x - 4, self.ord_y - self.ord_len),
+                                           (self.ord_x + 4, self.ord_y - self.ord_len)])
+        screen.blit(graph_f.render('0', False, tp.black), (self.ab_x - 20, self.ab_y))
+        screen.blit(graph_f.render('weigth', False, tp.black), (self.ab_x + self.ab_len + 7, self.ab_y + 15))
+        screen.blit(graph_f.render('way', False, tp.black), (self.ab_x - 45, self.ab_y - self.ord_len - 22))
 
 
 '''Создаем окно, настраиваем шрифт и часы'''
 pg.init()
 pg.font.init()
-f1 = pg.font.Font(None, 30)
+out_f = pg.font.Font(None, 30)
+graph_f = pg.font.Font(None, 25)
 manager = pgui.UIManager((tp.WIDTH, tp.HEIGHT))
 screen = pg.display.set_mode((tp.WIDTH, tp.HEIGHT))
 pg.display.set_caption("Falling Ball")
+all_sprites = pg.sprite.Group()
 clock = pg.time.Clock()
 screen.fill(tp.white)
 
 '''Предварительно задаем переменные'''
 m = 10
 V = 10
+V0 = 10
 h = 200000
 R = ((V * 3) / (math.pi * 4)) ** (1 / 3)
 r = R
 S = math.pi * r ** 2
 
-text = '''
-Высота 
-Скорость
-Ускорение
-'''
+# text = '''
+# Высота
+# Скорость
+# Ускорение
+# '''
 
 '''Объявляю переменные, чтобы не забыть'''
 weight = 0  # вес
@@ -377,7 +399,7 @@ v0 = 0  # начальная скорость
 v1 = 0  # конечная скорость
 Vseg = 0  # объем сегмента шара
 Farh = 0  # сила Архимеда
-P = 101325 # давление
+P = 101325  # давление
 R = round(((V * 3) / (math.pi * 4)) ** (1 / 3), 3)
 on_hit = True
 # delta_v = -1
@@ -394,7 +416,6 @@ all_h_arr = [0]  # список высот для графика
 
 running_time = False  # идут ли расчеты
 check = [0, 0, 0, 0]
-
 
 '''Создаем начальные элементы: кнопки и текстовые поля'''
 Start_b = pgui.elements.UIButton(relative_rect=pg.Rect((50, 10), tp.Start_b_size),
@@ -413,8 +434,6 @@ Next_point_b = pgui.elements.UIButton(relative_rect=pg.Rect((665, 10), tp.Restar
                                       text='След',
                                       manager=manager)
 
-
-
 m_entry = pgui.elements.UITextEntryLine(relative_rect=pg.Rect((tp.Input_x, tp.Input_y), tp.Input_size),
                                         manager=manager)
 V_entry = pgui.elements.UITextEntryLine(relative_rect=pg.Rect((tp.Input_x, tp.Input_y + 70), tp.Input_size),
@@ -424,8 +443,13 @@ h_entry = pgui.elements.UITextEntryLine(relative_rect=pg.Rect((tp.Input_x, tp.In
 h_delta_entry = pgui.elements.UITextEntryLine(relative_rect=pg.Rect((tp.Input_x, tp.Input_y + 70 * 3), tp.Input_size),
                                               manager=manager)
 
-Error_msg = pgui.elements.UILabel(relative_rect=pg.Rect((20, 800), (300, 50)), text='',
-                                              manager=manager)
+Error_msg = pgui.elements.UILabel(relative_rect=pg.Rect((20, 800), (250, 50)), text='',
+                                  manager=manager)
+
+pg.draw.rect(screen, tp.black, [350, 100, 1250, 800])
+pg.draw.rect(screen, tp.white, [353, 103, 1244, 794])
+axis = Axis(400, 850, 400, 850, 1100, 600)
+axis.draw()
 
 '''Задаем начальный текст'''
 m_entry.set_text(str(m))
@@ -446,10 +470,11 @@ h_entry.set_allowed_characters(tp.white_list)
 h_delta_entry.set_allowed_characters(tp.white_list)
 
 '''Пишем поясняющие заголовки'''
-screen.blit(f1.render(tp.title_m, False, tp.black), (50, 105))
-screen.blit(f1.render(tp.title_V, False, tp.black), (50, 175))
-screen.blit(f1.render(tp.title_h, False, tp.black), (50, 245))
-screen.blit(f1.render(tp.title_delta_h, False, tp.black), (50, 315))
+screen.blit(out_f.render(tp.title_m, False, tp.black), (50, 105))
+screen.blit(out_f.render(tp.title_V, False, tp.black), (50, 175))
+screen.blit(out_f.render(tp.title_h, False, tp.black), (50, 245))
+screen.blit(out_f.render(tp.title_delta_h, False, tp.black), (50, 315))
+
 run = True
 while run:
     if len(all_h_arr) > 1:
@@ -490,9 +515,13 @@ while run:
         enable(False)
 
         if h > 0:  # этап падения
-            if 10000 >= h >= tp.delta_h and tp.delta_h > 5:
-                tp.delta_h = 5
-            if 0 < h <= tp.delta_h and tp.delta_h > 5:
+            if 200000 >= h > 20000 and tp.delta_h > 1:
+                tp.delta_h = 50
+            if 20000 >= h > 10000 and tp.delta_h > 1:
+                tp.delta_h = 10
+            if 10000 >= h > tp.delta_h > 1:
+                tp.delta_h = 1
+            if 0 < h <= tp.delta_h < 1:
                 tp.delta_h = h
 
             v0 = v1
@@ -503,7 +532,7 @@ while run:
             try:
                 v1 = v_S(a, v0, tp.delta_h)
             except Exception:
-                print(v1, v0, g, a, h, p, S, weight)
+                # print(v1, v0, g, a, h, p, S, weight)
                 Error_msg.set_text('Слишком большой шаг!')
                 fig = plt.figure()  # настраиваем размер, чтобы не коверкать картинку
                 plt.grid(True)
@@ -513,20 +542,14 @@ while run:
                 plt.show()
                 Restart_bf()
                 running_time = False
-            print(h, weight, p, v1, a)
+            # print(h, weight, p, v1, a)
             arr_append(th, weight, a, tp.delta_h)
             all_weight_arr.append(weight)
             all_h_arr.append(th + tp.delta_h)
-            # weight_delay_control(weight_ar):
 
-
-            if 10000 < h or tp.delta_h <= 5:
+            if 200000 >= h > tp.delta_h:
                 h = round(h - tp.delta_h, 3)  # тякущая высота
                 th = round(th + tp.delta_h, 3)  # сколько пролетел
-            if 10000 >= h >= tp.delta_h and tp.delta_h > 5:
-                tp.delta_h = 5
-                h = round(h - 5, 3)  # тякущая высота
-                th = round(th + 5, 3)  # сколько пролетел
             if 0 < h <= tp.delta_h:
                 tp.delta_h = h
                 th = round(float(h_entry.get_text()), 0)  # сколько пролетел
@@ -537,7 +560,7 @@ while run:
             v0 = v1
             weight = resist_force(v1, tp.water_p, S, tp.Cf)
             a = a_F(tp.sea_g, weight)
-            print(h, weight, v0, v1, a)
+            # print(h, weight, v0, v1, a)
             v1 = 0
             time += tp.delta_t
             hit_arr.append(weight)
@@ -547,7 +570,7 @@ while run:
 
         if -(2 * R) <= h <= 0 and len(part_h_arr[2]) != 0:  # неполное погружение
             # draw_graph()
-            print('1', h, weight, v0, v1, a, V, Vseg, R)
+            # print('1', h, weight, v0, v1, a, V, Vseg, R)
             tp.delta_t = 0.005
             v0 = v1
             Vseg = round(Vseg_h(abs(h), R), 5)  # спросить про расчет объема частично погруженного шара
@@ -557,24 +580,37 @@ while run:
             v1 = round(v0 + tp.delta_t * a, 4)
             th += round(S_t(v0, tp.delta_t, a), 6)
             h -= round(S_t(v0, tp.delta_t, a), 6)
-            print('1', h, weight, v0, v1, a, V, Vseg, R)
+            # print('1', h, weight, v0, v1, a, V, Vseg, R)
             part_water_ar.append(weight)
             all_weight_arr.append(weight)
             all_h_arr.append(th + S_t(v0, tp.delta_t, a))
             part_h_arr[3].append(th + S_t(v0, tp.delta_t, a))
+
+            tp.depth = float(h_entry.get_text()) * 2  # ДЛЯ ТЕСТОВ!!!
 
             if weight <= 0:
                 running_time = False
                 Draw_graph()
                 Draw_animation()
 
-        if -10000 <= h < -(2 * R):  # погружение
-            print('2', h, weight, v0, v1, a, V, r)
+        if -tp.depth <= h < -(2 * R):  # погружение
+            # print('2', h, weight, v0, v1, a, V, V0, r)
+            tp.delta_h = round(tp.depth/10)
+
+            if tp.delta_h > tp.depth + h:
+                tp.delta_h = tp.depth + h
+
             v0 = v1
             P = P_h(abs(h))
-            V = comress_h(abs(h), V)
-            Farh = Arh_force(Vseg)
+            if len(water_ar) > 0:
+                V = comress_h(abs(h), V0)
+            else:
+                V = Vseg
+            print('1', V)
+            Farh = Arh_force(V)
             weight = round(m * tp.sea_g - Farh, 4)
+            print('2', h, V, V0, m, Farh)
+
             a = round(weight / m, 4)
             v1 = v_S(a, v0, tp.delta_h)
             h = round(h - tp.delta_h, 2)  # тякущая высота
@@ -583,16 +619,20 @@ while run:
             all_weight_arr.append(weight)
             all_h_arr.append(th + tp.delta_h)
             part_h_arr[4].append(th + tp.delta_h)
-        if h < -10000:
+
+
+
+        if h <= -tp.depth:
             running_time = False
             Draw_graph()
             Draw_animation()
 
-        pg.draw.rect(screen, tp.white, (50, tp.text_y, 350, 230))
+        pg.draw.rect(screen, tp.white, (50, tp.text_y, 250, 230))
         draw_text(screen)
 
     manager.update(time_delta)
     manager.draw_ui(screen)
+    all_sprites.draw(screen)
 
     clock.tick(tp.FPS)
-    pg.display.update()
+    pg.display.flip()
