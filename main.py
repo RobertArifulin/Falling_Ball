@@ -122,7 +122,7 @@ def focus_check():
 
 # внесение изменений в параметры после исправлений
 def changes():
-    global check, m_entry, V_entry, h_entry, h, m, V, V0, h_delta_entry, fly_arr_w, a0_arr_w, hit_arr_w, all_weight_arr, part_h_arr, part_water_ar_w, water_ar_w, all_h_arr, th, fly_arr_v, a0_arr_v, hit_arr_v, part_water_ar_v, water_ar_v
+    global check, m_entry, V_entry, h_entry, h, m, V, V0, h_delta_entry, fly_arr_w, a0_arr_w, hit_arr_w, all_weight_arr, part_h_arr, part_water_ar_w, water_ar_w, all_h_arr, th, fly_arr_v, a0_arr_v, hit_arr_v, part_water_ar_v, water_ar_v, all_v_arr
     if not m_entry.is_focused and check[0] == 1:
         m_entry.set_text(limit_check(m_entry.get_text(), '1', '1', '1')[0])
         m = float(m_entry.get_text())
@@ -147,6 +147,7 @@ def changes():
         part_water_ar_v = []
         water_ar_v = []
         part_h_arr = [[0], [], [], [], []]
+        all_v_arr = [0]
         all_weight_arr = [0]
         all_h_arr = [0]  # список высот для графика
         th = 0
@@ -250,25 +251,29 @@ def arr_append(new_th, new_weight, new_a, new_delta_h):
         a0_arr_v = []
 
 
-def Draw_graph_w():
-    fig = plt.figure(figsize=(6.4 * 1.7, 4.8 * 1.7))
+def Draw_graph(vertically, show, save):
+    fig = plt.figure(figsize=(6.4 * 2.4, 4.8 * 1.2))
+    plt.subplot(1, 2, 1)
 
     if len(part_water_ar_w) > 0:
         max_x = max([max(fly_arr_w), max(part_water_ar_w)]) * 1.2
     else:
         max_x = max(fly_arr_w)
-    fig = plt.axis(
-        [0, max(all_h_arr) * 1.1 + 20, min(all_weight_arr) * 1.1, max_x])
+
+    fig = plt.axis([0, max(all_h_arr) * 1.2 + 20, 0, max_x])
     plt.grid(True)
     plt.plot(part_h_arr[0], fly_arr_w, color='b', label='Полет с ускорением')
+
     if len(part_h_arr[1]) > 0:
         plt.plot([part_h_arr[0][-1], part_h_arr[1][0]], [fly_arr_w[-1], a0_arr_w[0]], color='g',
                  label='Полет без ускорения')
         plt.plot(part_h_arr[1], a0_arr_w, color='g')
         if len(part_h_arr[2]) > 0:
             plt.plot([part_h_arr[1][-1], part_h_arr[2][0]], [a0_arr_w[-1], hit_arr_w[0]], color='r')
+
     if len(part_h_arr[1]) == 0 and len(part_h_arr[2]) > 0:
         plt.plot([part_h_arr[0][-1], part_h_arr[2][0]], [fly_arr_w[-1], hit_arr_w[0]], color='r')
+
     if len(part_h_arr[2]) > 0:
         plt.plot(part_h_arr[2], hit_arr_w, color='r')
         if len(part_h_arr[3]) > 0:
@@ -276,63 +281,70 @@ def Draw_graph_w():
                      bbox=tp.box)
             plt.plot([part_h_arr[2][-1], part_h_arr[3][0]], [hit_arr_w[-1], part_water_ar_w[0]], color='r',
                      label='удар о воду')
+
     if len(part_h_arr[3]) > 0:
         plt.plot(part_h_arr[3], part_water_ar_w, color='c', label='Неполное погружение')
+
     if len(part_h_arr[4]) > 0 and len(part_h_arr[3]) > 0:
         plt.plot([part_h_arr[3][-1], part_h_arr[4][0]], [part_water_ar_w[-1], water_ar_w[0]], color='m',
                  label='погружение')
         plt.plot(part_h_arr[4], water_ar_w, color='m')
     plt.legend()
-    plt.xlabel("Путь(м)")  # подпишем оси
+    plt.xlabel("Высота(м)")  # подпишем оси
     plt.ylabel("Вес(Н)")
-    i = 1
-    while True:
-        if os.path.isfile(f'График веса-{i}.png'):
-            i += 1
-        else:
-            plt.savefig(f'График веса-{i}.png')
-            break
-    plt.show()
 
+    h = float(h_entry.get_text())
+    locs, labels = plt.xticks()
+    plt.xticks(ticks=locs, labels=[round(h - i) for i in plt.xticks()[0]])
 
-def Draw_graph_v():
-    fig = plt.figure(figsize=(6.4 * 1.7, 4.8 * 1.7))
+    plt.subplot(1, 2, 2)
     plt.grid(True)
     plt.plot(part_h_arr[0], fly_arr_v, color='b', label='Полет с ускорением')
+
     if len(part_h_arr[1]) > 0:
         plt.plot([part_h_arr[0][-1], part_h_arr[1][0]], [fly_arr_v[-1], a0_arr_v[0]], color='g',
                  label='Полет без ускорения')
         plt.plot(part_h_arr[1], a0_arr_v, color='g')
         if len(part_h_arr[2]) > 0:
             plt.plot([part_h_arr[1][-1], part_h_arr[2][0]], [a0_arr_v[-1], hit_arr_v[0]], color='r')
+
     if len(part_h_arr[1]) == 0 and len(part_h_arr[2]) > 0:
         plt.plot([part_h_arr[0][-1], part_h_arr[2][0]], [fly_arr_v[-1], hit_arr_v[0]], color='r')
+
     if len(part_h_arr[2]) > 0:
         plt.plot(part_h_arr[2], hit_arr_v, color='r')
         if len(part_h_arr[3]) > 0:
             plt.plot([part_h_arr[2][-1], part_h_arr[3][0]], [hit_arr_v[-1], part_water_ar_v[0]], color='r',
                      label='удар о воду')
+
     if len(part_h_arr[3]) > 0:
         plt.plot(part_h_arr[3], part_water_ar_v, color='c', label='Неполное погружение')
+
     if len(part_h_arr[4]) > 0 and len(part_h_arr[3]) > 0:
         plt.plot([part_h_arr[3][-1], part_h_arr[4][0]], [part_water_ar_v[-1], water_ar_v[0]], color='m',
                  label='погружение')
         plt.plot(part_h_arr[4], water_ar_v, color='m')
+
     plt.legend()
-    plt.xlabel("Путь(м)")  # подпишем оси
+    plt.xlabel("Высота(м)")  # подпишем оси
     plt.ylabel("Скорость(м/с2)")
 
-    i = 1
-    while True:
-        if os.path.isfile(f'График скорости-{i}.png'):
-            i += 1
-        else:
-            plt.savefig(f'График скорости-{i}.png')
-            break
-    plt.show()
+    locs, labels = plt.xticks()
+    plt.xticks(ticks=locs, labels=[round(h - i) for i in plt.xticks()[0]])
+
+    if save:
+        i = 1
+        while True:
+            if os.path.isfile(f'График {i}.png'):
+                i += 1
+            else:
+                plt.savefig(f'График {i}.png')
+                break
+    if show:
+        plt.show()
 
 
-def Draw_animation():
+def Draw_animation(vertically):
     fig, ax = plt.subplots(figsize=(6.4 * 1.7, 4.8 * 1.7))
     ax = plt.axis([0, max(all_h_arr) * 1.1, 0, tp.max_m * 12])
     plt.xlabel('Путь')
@@ -350,18 +362,17 @@ def Draw_animation():
         ani = FuncAnimation(fig, animate, interval=10, repeat=True, frames=len(all_weight_arr))
         i = 1
         while True:
-            if os.path.isfile(f'График веса-{i}.png'):
+            if os.path.isfile(f'График {i}.png'):
                 i += 1
             else:
-                ani.save(f'Анимация-{i}.gif', writer="pillow")
+                ani.save(f'Анимация {i}.gif', writer="pillow")
                 break
 
-    # plt.close(ax)
     plt.close(fig)
 
 
 def Reset_Variable():
-    global weight, time, p, a, th, g, v0, v1, Vseg, Farh, P, R, all_weight_arr, part_h_arr, all_h_arr, fly_arr_w, a0_arr_w, hit_arr_w, part_water_ar_w, water_ar_w, fly_arr_v, a0_arr_v, hit_arr_v, part_water_ar_v, water_ar_v
+    global weight, time, p, a, th, g, v0, v1, Vseg, Farh, P, R, all_weight_arr, part_h_arr, all_h_arr, fly_arr_w, a0_arr_w, hit_arr_w, part_water_ar_w, water_ar_w, fly_arr_v, a0_arr_v, hit_arr_v, part_water_ar_v, water_ar_v, all_v_arr
     weight = 0  # вес
     time = 0  # время
     p = 0  # плотность воздуха
@@ -387,6 +398,7 @@ def Reset_Variable():
     water_ar_v = []
     part_h_arr = [[0], [], [], [], []]
     all_weight_arr = [0]
+    all_v_arr = [0]
     all_h_arr = [0]  # список высот для графика
 
 
@@ -445,8 +457,7 @@ def Draw_graph_bf():
     h_delta_entry.disable()
 
     Start_b.set_text('Start')
-    Draw_graph_w()
-    Draw_graph_v()
+    Draw_graph(vertically, True, False)
     # Draw_animation()
 
     Start_b.enable()
@@ -459,14 +470,14 @@ def Draw_graph_bf():
 
 
 def Graph_type_bf():
+    global draw_weight_g
     if Graph_type_b.text == 'P(h)':
         Graph_type_b.set_text('v(h)')
+        draw_weight_g = False
         return None
     if Graph_type_b.text == 'v(h)':
-        Graph_type_b.set_text('P(h) & v(h)')
-        return None
-    if Graph_type_b.text == 'P(h) & v(h)':
         Graph_type_b.set_text('P(h)')
+        draw_weight_g = True
         return None
 
 
@@ -482,16 +493,57 @@ def Save_animation_bf():
         return None
 
 
+def Graph_reverse_bf():
+    global vertically
+    if Graph_reverse_b.text == 'вертикально':
+        Graph_reverse_b.set_text('горизонтально')
+        vertically = False
+        return None
+    if Graph_reverse_b.text == 'горизонтально':
+        Graph_reverse_b.set_text('вертикально')
+        vertically = True
+        return None
+
+
 def Prev_point_bf():
     global running_time
     running_time = False
-    pass
 
 
 def Next_point_bf():
     global running_time
     running_time = False
-    pass
+
+
+def Save_csv():
+    global all_v_arr, all_h_arr, all_weight_arr
+    all_h = [round(i, 2) for i in all_h_arr]
+    all_weight = [round(i, 2) for i in all_weight_arr]
+    all_v = [round(i, 2) for i in all_v_arr]
+
+    dic = {'way': all_h,
+           'weight': all_weight,
+           'speed': all_v}
+
+    i = 1
+    while True:
+        if os.path.isfile(f'График {i}.png'):
+            i += 1
+        else:
+            name = f'Данные {i}.csv'
+            break
+
+    df = pd.DataFrame(dic, columns=['way', 'weight', 'speed'])
+    df.to_csv(path_or_buf=name, index=False, sep='\t')
+
+
+def Save_all_bf():
+    global running_time, vertically, all_v_arr, all_h_arr, all_weight_arr, saving_anim
+    running_time = False
+    Draw_graph(vertically, False, True)
+    if saving_anim:
+        Draw_animation(vertically)
+    Save_csv()
 
 
 def correct_borders(max_x, max_y):
@@ -551,30 +603,75 @@ class Axis:
                 pygame.draw.line(surface, (220, 220, 220), (self.ord_x + 5, self.ord_y - i * tp.ord_interval),
                                  (self.ord_x + self.ab_len, self.ord_y - i * tp.ord_interval), width=3)
 
-        surface.blit(graph_f.render('0', False, tp.black), (self.ab_x - 20, self.ab_y))
-        surface.blit(graph_f.render('way', False, tp.black), (self.ab_x + self.ab_len + 7, self.ab_y + 15))
-        surface.blit(graph_f.render('weigth', False, tp.black), (self.ord_x - 45, self.ord_y - self.ord_len - 22))
 
-    def sign_devision(self, surface, max_x, max_y):
-        max_x, max_y = correct_borders(max_x, max_y)
-        for i in range(self.ab_len // tp.ab_interval + 1):
-            if i != 0:
-                text = max_x / self.ab_len * tp.ab_interval * i
-                surface.blit(graph_f.render(f'{text}', False, tp.black),
+    def sign_devision(self, surface, max_x, max_y, vertically):
+        h = float(h_entry.get_text())
+        if vertically:
+            max_x, max_y = correct_borders(max_x, max_y)
+
+            for i in range(self.ab_len // tp.ab_interval + 1):
+                text = h - max_x / self.ab_len * tp.ab_interval * i
+                surface.blit(graph_f.render(f'{round(text)}', False, tp.black),
                              (self.ab_x + i * tp.ab_interval, self.ab_y + 5))
-        for i in range(self.ord_len // tp.ord_interval + 1):
-            if i != 0:
-                text = max_y / self.ord_len * tp.ord_interval * i
-                surface.blit(graph_f.render(f'{text}', False, tp.black),
-                             (self.ord_x - 50, self.ord_y - i * tp.ord_interval))
 
-    def draw_graph(self, all_h, all_weight, max_x, max_y):
-        max_x, max_y = correct_borders(max_x, max_y)
-        x = [i * (self.ab_len / max_x) for i in all_h]
-        y = [i * (self.ord_len / max_y) for i in all_weight]
-        for i in range(len(all_h) - 1):
-            pygame.draw.line(surface1, tp.red, (x[i] + self.ab_x, self.ab_y - y[i]),
-                             (x[i + 1] + self.ab_x, self.ab_y - y[i + 1]), width=3)
+            for i in range(self.ord_len // tp.ord_interval + 1):
+                text = max_y / self.ord_len * tp.ord_interval * i
+                surface.blit(graph_f.render(f'{round(text)}', False, tp.black),
+                             (self.ord_x - len(str(round(text))) * 12, self.ord_y - i * tp.ord_interval))
+        else:
+            max_y, max_x = correct_borders(max_x, max_y)
+
+            for i in range(self.ab_len // tp.ab_interval + 1):
+                text = max_x / self.ab_len * tp.ab_interval * i
+                surface.blit(graph_f.render(f'{round(text)}', False, tp.black),
+                             (self.ab_x + i * tp.ab_interval, self.ab_y + 5))
+
+            for i in range(self.ord_len // tp.ord_interval + 1):
+                text = h - (max_y - max_y / self.ord_len * tp.ord_interval * i)
+                surface.blit(graph_f.render(f'{round(text)}', False, tp.black),
+                             (self.ord_x - len(str(round(text))) * 12, self.ord_y - i * tp.ord_interval))
+
+
+    def draw_weight_graph(self, surface, all_h, all_weight, max_x, max_y, vertically):
+        if vertically:
+            max_x, max_y = correct_borders(max_x, max_y)
+            surface.blit(graph_f.render('высота', False, tp.black), (self.ab_x + self.ab_len + 10, self.ab_y - 25))
+            surface.blit(graph_f.render('вес', False, tp.black), (self.ord_x - 1.5 * 10, self.ord_y - self.ord_len - 35))
+            x = [i * (self.ab_len / max_x) for i in all_h]
+            y = [i * (self.ord_len / max_y) for i in all_weight]
+            for i in range(len(all_h) - 1):
+                pygame.draw.line(surface, tp.red, (x[i] + self.ab_x, self.ab_y - y[i]),
+                                 (x[i + 1] + self.ab_x, self.ab_y - y[i + 1]), width=3)
+        else:
+            max_y, max_x = correct_borders(max_x, max_y)
+            surface.blit(graph_f.render('вес', False, tp.black), (self.ab_x + self.ab_len + 10, self.ab_y - 25))
+            surface.blit(graph_f.render('высота', False, tp.black), (self.ord_x - 3 * 10, self.ord_y - self.ord_len - 35))
+            x = [i * (self.ab_len / max_x) for i in all_weight]
+            y = [self.ord_len - i * (self.ord_len / max_y) for i in all_h]
+            for i in range(len(all_h) - 1):
+                pygame.draw.line(surface, tp.red, (x[i] + self.ab_x, self.ab_y - y[i]),
+                                 (x[i + 1] + self.ab_x, self.ab_y - y[i + 1]), width=3)
+
+
+    def draw_v_graph(self, surface, all_h, all_v, max_x, max_y, vertically):
+        if vertically:
+            max_x, max_y = correct_borders(max_x, max_y)
+            surface.blit(graph_f.render('высота', False, tp.black), (self.ab_x + self.ab_len + 10, self.ab_y - 25))
+            surface.blit(graph_f.render('скорость', False, tp.black), (self.ord_x - 4 * 10, self.ord_y - self.ord_len - 35))
+            x = [i * (self.ab_len / max_x) for i in all_h]
+            y = [i * (self.ord_len / max_y) for i in all_v]
+            for i in range(len(all_h) - 1):
+                pygame.draw.line(surface, tp.blue, (x[i] + self.ab_x, self.ab_y - y[i]),
+                                 (x[i + 1] + self.ab_x, self.ab_y - y[i + 1]), width=3)
+        else:
+            max_y, max_x = correct_borders(max_x, max_y)
+            surface.blit(graph_f.render('скорость', False, tp.black), (self.ab_x + self.ab_len + 10, self.ab_y - 25))
+            surface.blit(graph_f.render('высота', False, tp.black), (self.ord_x - 3 * 10, self.ord_y - self.ord_len - 35))
+            x = [i * (self.ab_len / max_x) for i in all_v]
+            y = [i * (self.ord_len / max_y) for i in all_h]
+            for i in range(len(all_h) - 1):
+                pygame.draw.line(surface, tp.blue, (x[i] + self.ab_x, self.ab_y - y[i]),
+                                 (x[i + 1] + self.ab_x, self.ab_y - y[i + 1]), width=3)
 
 
 '''Создаем окно, настраиваем шрифт и часы'''
@@ -624,9 +721,12 @@ part_water_ar_v = []
 water_ar_v = []
 part_h_arr = [[0], [], [], [], []]
 
+all_v_arr = [0]
 all_weight_arr = [0]
 all_h_arr = [0]  # список высот для графика
 
+vertically = True
+draw_weight_g = True
 saving_anim = True
 running_time = False  # идут ли расчеты
 check = [0, 0, 0, 0]
@@ -650,9 +750,15 @@ Next_point_b = pgui.elements.UIButton(relative_rect=pygame.Rect((665, 10), tp.Re
 Graph_type_b = pgui.elements.UIButton(relative_rect=pygame.Rect((800, 10), tp.Restart_b_size),
                                       text='P(h)',
                                       manager=manager)
-Save_animation_b = pgui.elements.UIButton(relative_rect=pygame.Rect((935, 10), tp.Restart_b_size),
+Graph_reverse_b = pgui.elements.UIButton(relative_rect=pygame.Rect((935, 10), tp.Restart_b_size),
+                                         text='вертикально',
+                                         manager=manager)
+Save_animation_b = pgui.elements.UIButton(relative_rect=pygame.Rect((1070, 10), tp.Restart_b_size),
                                           text='Сохр. аним.',
                                           manager=manager)
+Save_all_b = pgui.elements.UIButton(relative_rect=pygame.Rect((1205, 10), tp.Restart_b_size),
+                                    text='Сохр. все',
+                                    manager=manager)
 
 m_entry = pgui.elements.UITextEntryLine(relative_rect=pygame.Rect((tp.Input_x, tp.Input_y), tp.Input_size),
                                         manager=manager)
@@ -669,8 +775,11 @@ Error_msg = pgui.elements.UILabel(relative_rect=pygame.Rect((20, 800), (250, 50)
 
 surface1 = pygame.Surface((1250, 800), flags=0)
 surface1.fill((240, 240, 240))
-axis = Axis(100, 700, 100, 700, 1000, 600)
-axis.draw(surface1)
+axis1 = Axis(100, 700, 100, 700, 1000, 600)
+axis2 = Axis(100, 700, 100, 700, 1000, 600)
+# pygame.draw.line(surface1, tp.black, (625, 0), (625, 800))
+# pygame.draw.line(surface1, tp.black, (0, 400), (1250, 0))
+axis1.draw(surface1)
 
 '''Задаем начальный текст'''
 m_entry.set_text(str(m))
@@ -707,12 +816,12 @@ while run:
         Draw_graph_b.enable()
         Next_point_b.enable()
         Prev_point_b.enable()
+        Save_all_b.enable()
     else:
         Draw_graph_b.disable()
         Next_point_b.disable()
         Prev_point_b.disable()
-    r = round(((V * 3) / (math.pi * 4)) ** (1 / 3), 3)
-    S = round(math.pi * (r ** 2), 3)
+        Save_all_b.disable()
 
     time_delta = clock.tick(60) / 1000.0
     for event in pygame.event.get():
@@ -720,7 +829,7 @@ while run:
             run = False
 
         if event.type == pygame.USEREVENT:
-            if event.user_type == pgui.UI_BUTTON_PRESSED:
+            if event.user_type == pgui.UI_BUTTON_PRESSED:  # обработка нажатий на кнопки
                 if event.ui_element == Start_b:  # нажатие на старт
                     Start_bf()
                 if event.ui_element == Restart_b:  # нажатие на рестарт
@@ -732,9 +841,13 @@ while run:
                 if event.ui_element == Save_animation_b:
                     Save_animation_bf()
                 if event.ui_element == Next_point_b:
-                    Save_animation_bf()
+                    Next_point_bf()
                 if event.ui_element == Prev_point_b:
-                    Save_animation_bf()
+                    Prev_point_bf()
+                if event.ui_element == Graph_reverse_b:
+                    Graph_reverse_bf()
+                if event.ui_element == Save_all_b:
+                    Save_all_bf()
 
         manager.process_events(event)
     if not running_time:
@@ -746,6 +859,8 @@ while run:
         enable(False)
 
         if h > 0:  # этап падения
+            r = round(((V0 * 3) / (math.pi * 4)) ** (1 / 3), 3)
+            S = round(math.pi * (r ** 2), 3)
             tp.delta_h = Correct_delta_h(h)
             v0 = v1
             g = g_h(h)
@@ -761,6 +876,7 @@ while run:
                 running_time = False
             arr_append(th, weight, a, tp.delta_h)
             all_weight_arr.append(weight)
+            all_v_arr.append(v1)
             all_h_arr.append(th + tp.delta_h)
 
             if 200000 >= h > 1:
@@ -775,18 +891,16 @@ while run:
             v0 = v1
             weight = resist_force(v1, tp.water_p, S, tp.Cf)
             a = a_F(tp.sea_g, weight)
-            # print(h, weight, v0, v1, a)
             v1 = 0
             time += tp.delta_t
             hit_arr_w.append(weight)
             hit_arr_v.append(v1)
             all_weight_arr.append(weight)
+            all_v_arr.append(v1)
             all_h_arr.append(th)
             part_h_arr[2].append(th)
 
         if -(2 * R) <= h <= 0 and len(part_h_arr[2]) != 0:  # неполное погружение
-            # draw_graph()
-            # print('1', h, weight, v0, v1, a, V, Vseg, R)
             tp.delta_t = 0.005
             v0 = v1
             Vseg = round(Vseg_h(abs(h), R), 5)  # спросить про расчет объема частично погруженного шара
@@ -796,11 +910,11 @@ while run:
             v1 = round(v0 + tp.delta_t * a, 4)
             th += round(S_t(v0, tp.delta_t, a), 6)
             h -= round(S_t(v0, tp.delta_t, a), 6)
-            # print('1', h, weight, v0, v1, a, V, Vseg, R)
             part_water_ar_w.append(weight)
             part_water_ar_v.append(v1)
             all_weight_arr.append(weight)
             all_h_arr.append(th + S_t(v0, tp.delta_t, a))
+            all_v_arr.append(v1)
             part_h_arr[3].append(th + S_t(v0, tp.delta_t, a))
 
             tp.depth = float(h_entry.get_text()) * 2  # ДЛЯ ТЕСТОВ!!!
@@ -810,12 +924,11 @@ while run:
                 all_weight_arr[-1] = 0
                 running_time = False
                 if saving_anim:
-                    Draw_animation()
-                Draw_graph_w()
-                Draw_graph_v()
+                    Draw_animation(vertically)
+                Save_csv()
+                Draw_graph(vertically, True, True)
 
         if -tp.depth <= h < -(2 * R):  # погружение
-            # print('2', h, weight, v0, v1, a, V, V0, r)
             tp.delta_h = Correct_delta_h(h)
 
             if tp.delta_h > tp.depth + h:
@@ -831,7 +944,6 @@ while run:
             r = round(((V * 3) / (math.pi * 4)) ** (1 / 3), 3)
             S = round(math.pi * (r ** 2), 3)
             Farh = Arh_force(V)
-            # Fres = resist_force(v0, tp.water_p, S, tp.Cf)
             weight = round(m * tp.sea_g - Farh, 4)
             print('2', h, V, V0, m * tp.sea_g, Farh, v1)
 
@@ -842,24 +954,30 @@ while run:
             water_ar_w.append(weight)
             water_ar_v.append(v1)
             all_weight_arr.append(weight)
+            all_v_arr.append(v1)
             all_h_arr.append(th + tp.delta_h)
             part_h_arr[4].append(th + tp.delta_h)
 
         if h <= -tp.depth:
             running_time = False
             if saving_anim:
-                Draw_animation()
-            Draw_graph_w()
-            Draw_graph_v()
+                Draw_animation(vertically)
+            Save_csv()
+            Draw_graph(vertically, True, True)
 
         pygame.draw.rect(screen, tp.white, (50, tp.text_y, 250, 230))
         draw_text(screen)
 
     surface1.fill((240, 240, 240))
-    axis.draw(surface1)
-    axis.sign_devision(surface1, max(all_h_arr), max(all_weight_arr))
+    axis1.draw(surface1)
     if len(all_h_arr) > 1:
-        axis.draw_graph(all_h_arr, all_weight_arr, max(all_h_arr), max(all_weight_arr))
+        if draw_weight_g:
+            axis1.sign_devision(surface1, max(all_h_arr), max(all_weight_arr), vertically)
+            axis1.draw_weight_graph(surface1, all_h_arr, all_weight_arr, max(all_h_arr), max(all_weight_arr),
+                                    vertically)
+        else:
+            axis1.sign_devision(surface1, max(all_h_arr), max(all_v_arr), vertically)
+            axis1.draw_v_graph(surface1, all_h_arr, all_v_arr, max(all_h_arr), max(all_v_arr), vertically)
 
     manager.update(time_delta)
     manager.draw_ui(screen)
