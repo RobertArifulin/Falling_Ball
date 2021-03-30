@@ -488,7 +488,7 @@ def Start_bf():
     if Start_b.text == 'Start':
         Start_b.set_text('Stop')
         # r = round(((V * 3) / (math.pi * 4)) ** (1 / 3), 3)
-        Error_msg.text = ''
+        # Error_msg.text = ''
         running_time = True
     else:
         Start_b.set_text('Start')
@@ -863,8 +863,8 @@ h_delta_entry = pgui.elements.UITextEntryLine(
     relative_rect=pygame.Rect((tp.Input_x, tp.Input_y + 70 * 3), tp.Input_size),
     manager=manager)
 
-Error_msg = pgui.elements.UILabel(relative_rect=pygame.Rect((20, 800), (250, 50)), text='',
-                                  manager=manager)
+# Error_msg = pgui.elements.UILabel(relative_rect=pygame.Rect((20, 800), (250, 50)), text='',
+#                                   manager=manager)
 
 surface1 = pygame.Surface((1250, 800), flags=0)
 surface1.fill((240, 240, 240))
