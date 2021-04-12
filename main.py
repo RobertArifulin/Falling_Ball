@@ -299,6 +299,7 @@ def Draw_graph(vertically, show, save):
                      bbox=tp.box)
             plt.plot([part_h_arr[2][-1], part_h_arr[3][0]], [hit_arr_w[-1], part_water_ar_w[0]], color='r',
                      label='удар о воду')
+            
 
 
     if len(part_h_arr[3]) > 0:
@@ -322,31 +323,32 @@ def Draw_graph(vertically, show, save):
 
     plt.subplot(1, 2, 2)
     plt.grid(True)
+    
     if len(part_h_arr[0]) > 0:
         plt.plot(part_h_arr[0], fly_arr_v, color='b', label='Полет с ускорением')
 
-    if len(part_h_arr[1]) > 0 and len(part_h_arr[0]) > 0:
-        plt.plot([part_h_arr[0][-1], part_h_arr[1][0]], [fly_arr_v[-1], a0_arr_v[0]], color='g',
-                 label='Полет без ускорения')
+    if len(part_h_arr[1]) > 0: 
         plt.plot(part_h_arr[1], a0_arr_v, color='g')
-        if len(part_h_arr[2]) > 0:
-            plt.plot([part_h_arr[1][-1], part_h_arr[2][0]], [a0_arr_v[-1], hit_arr_v[0]], color='r')
+        if len(part_h_arr[0]) > 0:
+            plt.plot([part_h_arr[0][-1], part_h_arr[1][0]], [fly_arr_v[-1], a0_arr_v[0]], color='g', label='Полет без ускорения')
 
     if len(part_h_arr[1]) == 0 and len(part_h_arr[2]) > 0:
         plt.plot([part_h_arr[0][-1], part_h_arr[2][0]], [fly_arr_v[-1], hit_arr_v[0]], color='r')
-
+        
     if len(part_h_arr[2]) > 0:
         plt.plot(part_h_arr[2], hit_arr_v, color='r')
+        if len(part_h_arr[1]) > 0:
+            plt.plot([part_h_arr[1][-1], part_h_arr[2][0]], [a0_arr_v[-1], hit_arr_v[0]], color='r')
         if len(part_h_arr[3]) > 0:
             plt.plot([part_h_arr[2][-1], part_h_arr[3][0]], [hit_arr_v[-1], part_water_ar_v[0]], color='r',
                      label='удар о воду')
 
     if len(part_h_arr[3]) > 0:
         plt.plot(part_h_arr[3], part_water_ar_v, color='c', label='Неполное погружение')
+        if len(part_h_arr[4]) > 0:
+            plt.plot([part_h_arr[3][-1], part_h_arr[4][0]], [part_water_ar_v[-1], water_ar_v[0]], color='m', label='погружение')
 
     if len(part_h_arr[4]) > 0 and len(part_h_arr[3]) > 0:
-        plt.plot([part_h_arr[3][-1], part_h_arr[4][0]], [part_water_ar_v[-1], water_ar_v[0]], color='m',
-                 label='погружение')
         plt.plot(part_h_arr[4], water_ar_v, color='m')
 
     plt.legend()
@@ -368,13 +370,12 @@ def Draw_graph(vertically, show, save):
         plt.show()
 
 
-def Draw_w_animation(vertically):
+def Draw_w_animation():
     fig, ax = plt.subplots(figsize=(6.4 * 1.7, 4.8 * 1.7))
     ax = plt.axis([0, max(all_h_arr) * 1.1, 0, tp.max_m * 12])
     plt.xlabel('Путь')
     plt.ylabel('Вес')
     red_dot, = plt.plot([0], [0], 'ro')
-    print(len(all_weight_arr), len(all_h_arr))
     plt.grid(True)
 
     def animate(i):
@@ -400,7 +401,6 @@ def Draw_v_animation(vertically):
     plt.xlabel('Путь')
     plt.ylabel('Вес')
     red_dot, = plt.plot([0], [0], 'ro')
-    print(len(all_v_arr), len(all_h_arr))
     plt.grid(True)
 
     def animate(i):
@@ -423,7 +423,7 @@ def Draw_v_animation(vertically):
 
 
 def Reset_Variable(reset_type):
-    global weight, time, p, a, th, g, v0, v1, Vseg, Farh, P, r, all_weight_arr, part_h_arr, all_h_arr, fly_arr_w, a0_arr_w, hit_arr_w, part_water_ar_w, water_ar_w, fly_arr_v, a0_arr_v, hit_arr_v, part_water_ar_v, water_ar_v, all_v_arr
+    global weight, time, p, a, th, g, v0, v1, Vseg, Farh, P, r
     weight = 0  # вес
     time = 0  # время
     p = 0  # плотность воздуха
@@ -437,6 +437,12 @@ def Reset_Variable(reset_type):
     r = round(((V * 3) / (math.pi * 4)) ** (1 / 3), 3)
     P = 101325  # давление
 
+    if reset_type == 1:
+        reset_lists(1)
+
+
+def reset_lists(reset_type):
+    global all_weight_arr, part_h_arr, all_h_arr, fly_arr_w, a0_arr_w, hit_arr_w, part_water_ar_w, water_ar_w, fly_arr_v, a0_arr_v, hit_arr_v, part_water_ar_v, water_ar_v, all_v_arr, new_all_v_arr, new_all_h_arr, new_all_weight_arr
     a0_arr_w = []
     hit_arr_w = []
     all_weight_arr = []
@@ -456,6 +462,10 @@ def Reset_Variable(reset_type):
         all_h_arr = [0]  # список высот для графика
         fly_arr_v = [0]  # список скоростей для графика
 
+        new_all_v_arr = [0]
+        new_all_weight_arr = [0]
+        new_all_h_arr = [0]
+
     if reset_type == 2:
         fly_arr_w = []  # список веса для графика
         part_h_arr = [[], [], [], [], []]
@@ -463,6 +473,12 @@ def Reset_Variable(reset_type):
         all_v_arr = []
         all_h_arr = []  # список высот для графика
         fly_arr_v = []  # список скоростей для графика
+
+        new_all_v_arr = []
+        new_all_weight_arr = []
+        new_all_h_arr = []
+
+
 
 def Correct_delta_h(new_h):
     if 0 < new_h <= 1:
@@ -943,6 +959,7 @@ while run:
                         h = start_h - th
                         v1 = new_all_v_arr[-1]
                         weight = new_all_weight_arr[-1]
+                        reset_lists(2)
                         prev_point = False
                         Start_bf()
                     else:
